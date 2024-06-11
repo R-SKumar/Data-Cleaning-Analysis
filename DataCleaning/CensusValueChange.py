@@ -6,7 +6,7 @@ from docx import Document
 from pymongo.mongo_client import MongoClient
 import mysql.connector
 
-fileData = None
+# fileData = None
 def valueChange(sourcePath, outputPath, sheetName, columnInfo, methodRun, searchValue):
     try:
         # Check if the input file exists
@@ -57,6 +57,7 @@ def valueChange(sourcePath, outputPath, sheetName, columnInfo, methodRun, search
                     columnInfo[0]
                 ] = replaceValue
         elif methodRun == 'Data':
+            print('data')
             initMisValue = fileData.isna().mean() * 100
             updatePopulationData(fileData)
             misColumnval = {('Population','Male','Female'),
@@ -75,8 +76,10 @@ def valueChange(sourcePath, outputPath, sheetName, columnInfo, methodRun, search
                 {'Literate': {'Literate_Education': ['Below_Primary_Education','Primary_Education','Middle_Education','Secondary_Education','Higher_Education','Graduate_Education','Other_Education']}},
                 {'AgeGroup': {'Population': ['Young_and_Adult','Middle_Aged','Senior_Citizen','Age_Not_Stated']}}
             ]
-            fileData = updateMissingValuesMultiColumn(fileData,multiMisColumn)            
-            endMisValue = fileData.isna().mean() * 100
+            updateMissingValuesMultiColumn(fileData,multiMisColumn)            
+            endMisValue = fileData.isna().mean() * 100            
+            # return savetoMongoDB(fileData)
+        elif methodRun == 'SaveMango':
             return savetoMongoDB(fileData)
         else:
             return "Method not matched to run"
@@ -103,6 +106,7 @@ def updatePopulationData(fileData):
         )
     # Drop the temporary column
     fileData.drop(columns=['workers_Sum'], inplace=True)
+    # print(fileData[0])
 
 def updateMissingValues(fileData, keyCollection):
     # if len(keyValue) == 0:
@@ -140,7 +144,7 @@ def updateMissingValuesMultiColumn(fileData, columnInfo):
         
         # Drop the temporary column
         fileData.drop(columns=['workers_Sum'], inplace=True)
-    return fileData
+    # return fileData
 
 def getMissingColumn(availableColumn, columnInfo):
     # Check the column type
@@ -225,7 +229,7 @@ def getfromMangoDB():
         return f"An error occurred: {e}"
 
 def getMangoURI():
-    return "mongodb+srv://xxxxx:xxxxx@cluster0.na93hqc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    return "mongodb+srv://xxxx:xxxx@cluster0.na93hqc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 # Function to infer MySQL data type from MongoDB data
 def mysqlType(value):
@@ -344,12 +348,16 @@ if updateData == "Success":
         updateData = valueChange(updateFile, updateFile,sheetName,columnDetails,'District',searchVal)
         if updateData == "Success":
             updateData = valueChange(updateFile, updateFile,sheetName,None,'Data',None)            
-            if updateData == "Success":   
-                updateData = insertDatatoSQL()
-                if updateData == "Success":
-                    print(f'SQL DB Inserted: {updateData}')
+            if updateData == "Success":
+                updateData = valueChange(updateFile, updateFile,sheetName,None,'SaveMango',None)
+                if updateData == "Success":   
+                    updateData = insertDatatoSQL()
+                    if updateData == "Success":
+                        print(f'SQL DB Inserted: {updateData}')
+                    else: 
+                        print(f'SQL DB update: {updateData}')
                 else: 
-                    print(f'SQL DB update: {updateData}')
+                    print(f'MangoDB update: {updateData}')
             else:
                 print(f'Missing Data: {updateData}')
         else:
@@ -358,4 +366,3 @@ if updateData == "Success":
         print(f"Capitalize Error: {updateData}")
 else:
     print(f"Rename Error: {updateData}")
-
