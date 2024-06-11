@@ -7,7 +7,9 @@ Python, SQL , MongoDB and Streamlit
 ## Libraries To Install:
     pip install pandas
     pip install openpyxl
+    pip install python-docx
     pip install pymongo
+    pip install mysql-connector-python
     pip install streamlit
     
 ## Running the Application:
